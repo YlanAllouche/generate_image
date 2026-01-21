@@ -9,19 +9,32 @@ import requests
 
 OPENROUTER_API_KEY = ""
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "google/gemini-2.5-flash-image-preview"
-MODEL = "google/gemini-3-pro-image-preview"
+# MODEL = "google/gemini-2.5-flash-image-preview"
+# MODEL = "google/gemini-3-pro-image-preview"
+MODEL = "google/gemini-2.5-flash-image"
 
 
-def generate_image(prompt: str) -> bytes:
+def generate_image(prompt: str, image_path: str = None) -> bytes:
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
     }
 
+    content = [{"type": "text", "text": prompt}]
+
+    if image_path:
+        with open(image_path, "rb") as f:
+            image_data = base64.b64encode(f.read()).decode()
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{image_data}"},
+            }
+        )
+
     payload = {
         "model": MODEL,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": content}],
         "modalities": ["image", "text"],
         "image_config": {"aspect_ratio": "16:9"},
     }
@@ -75,14 +88,30 @@ def save_image(image_data: bytes, prompt: str) -> str:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python generate_image.py '<prompt>'")
+        print("Usage: python generate_image.py '<prompt>' [-i <image_path>]")
         print("Example: python generate_image.py 'A beautiful sunset over mountains'")
+        print("Example: python generate_image.py 'remove the background' -i my_img.png")
         sys.exit(1)
 
-    prompt = " ".join(sys.argv[1:])
-    print(f"Generating image for prompt: {prompt}")
+    args = sys.argv[1:]
+    prompt_parts = []
+    image_path = None
 
-    image_data = generate_image(prompt)
+    i = 0
+    while i < len(args):
+        if args[i] == "-i" and i + 1 < len(args):
+            image_path = args[i + 1]
+            i += 2
+        else:
+            prompt_parts.append(args[i])
+            i += 1
+
+    prompt = " ".join(prompt_parts)
+    print(f"Generating image for prompt: {prompt}")
+    if image_path:
+        print(f"Using context image: {image_path}")
+
+    image_data = generate_image(prompt, image_path)
     save_image(image_data, prompt)
     print("Done!")
 
