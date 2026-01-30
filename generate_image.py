@@ -10,8 +10,8 @@ import requests
 OPENROUTER_API_KEY = ""
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # MODEL = "google/gemini-2.5-flash-image-preview"
-# MODEL = "google/gemini-3-pro-image-preview"
-MODEL = "google/gemini-2.5-flash-image"
+# MODEL = "google/gemini-2.5-flash-image"
+MODEL = "google/gemini-3-pro-image-preview"
 
 
 def generate_image(prompt: str, image_path: str = None) -> bytes:
@@ -107,7 +107,18 @@ def main():
             i += 1
 
     prompt = " ".join(prompt_parts)
-    print(f"Generating image for prompt: {prompt}")
+
+    # If no prompt provided but image provided, set default prompt
+    if not prompt and image_path:
+        prompt = "draw this picture up in a pop art style, no dots, somewhat realistic and minimalist, make it close to the original color"
+        print(f"No prompt provided. Using default prompt: {prompt}")
+    elif not prompt:
+        print("Error: No prompt provided")
+        print("Usage: python generate_image.py '<prompt>' [-i <image_path>]")
+        sys.exit(1)
+    else:
+        print(f"Generating image for prompt: {prompt}")
+
     if image_path:
         print(f"Using context image: {image_path}")
 
